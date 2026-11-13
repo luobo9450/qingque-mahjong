@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#102923">
   <meta name="description" content="青雀麻将计算器，支持幺鸡万能牌与四鸡满牌，快速计算胡牌和最优弃牌。">
   <title>青雀麻将 · 胡牌与打牌计算器</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%23e1c48b'/%3E%3Cpath d='M15 31c6-13 11-16 20-17-3 10-8 14-20 17Zm0 0 12-10' fill='none' stroke='%23132d26' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
-  <script defer src="mahjong.js"></script>
-  <script defer src="app.js"></script>
+  <link rel="stylesheet" href="styles.css?v=3">
+  <script defer src="mahjong.js?v=3"></script>
+  <script defer src="app.js?v=3"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -100,9 +100,9 @@
     <ul>
       <li>牌库包括 1～9 万、筒、条，每种 4 张，共 108 张。</li>
       <li>1 条（幺鸡）可代替任意牌。手里有 4 张幺鸡，直接显示满牌。</li>
-      <li>默认胡牌由 4 组顺子或刻子，加 1 对将牌组成。打开「计入七对」可额外计算七对。</li>
-      <li>13 张手牌可查听牌，14 张手牌可判胡或比较弃牌。弃牌优先按可胡的剩余张数排序，张数相同时按牌种数排序。</li>
-      <li>每种牌的剩余张数从 4 张中扣除手牌与本次弃牌。其他玩家持有或已打出的牌未知。</li>
+      <li>普通胡牌需要 4 组顺子、刻子或杠，加 1 对将牌。已经吃、碰、杠的牌留在桌面上，只录入手里的牌。每组桌面牌按一组算。七对只在 14 张手牌时计算。</li>
+      <li>2、5、8、11、14 张可判胡或比较弃牌。1、4、7、10、13 张可查听牌。3、6、9、12 张可查摸哪张能进入听牌。</li>
+      <li>弃牌按可胡的剩余张数排序，张数相同再按牌种数排序。剩余张数是理论值，只扣除已录入的手牌和本次模拟摸到的牌，桌面牌和其他玩家的牌没有计入。</li>
     </ul>
   </dialog>
 </body>

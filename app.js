@@ -63,10 +63,17 @@
     return counts;
   }
 
-  function resultHeading(eyebrow, title, description) {
+  function resultHeading(eyebrow, title, description, note = '') {
     return `<p class="result-eyebrow">${eyebrow}</p>
       <h2 class="result-title">${title}</h2>
-      <p class="result-subtitle">${description}</p>`;
+      <p class="result-subtitle">${description}${note ? `<br>${note}` : ''}</p>`;
+  }
+
+  function shortHandNote(size) {
+    if (size === maxHand) return '';
+    const melds = Math.floor((maxHand - size) / 3);
+    if (melds === 0) return '按没有吃、碰、杠计算。';
+    return `按已吃、碰、杠 ${melds} 组计算，只录入手中未成组的牌。`;
   }
 
   function waitsMarkup(waits) {
@@ -79,17 +86,32 @@
     </ul>`;
   }
 
-  function renderDiscardResults(options, fullJokers) {
+  function rankingMarkup(entries, heading, action) {
+    return `<div class="ranking" aria-label="${heading}">
+      <h3 class="ranking-title">${heading}</h3>
+      ${entries.map(({ tile, waits, total, remaining }, index) => `<details class="rank-row">
+        <summary>
+          <span class="rank-index">${index + 1}</span>
+          <span class="rank-main">${tileMarkup(tile, { small: true })}<span>${action} ${tileName(tile)}</span></span>
+          <span class="rank-detail">${remaining === undefined ? `${waits.length} 种` : `余 ${remaining} 张`}</span>
+          <span class="rank-total">${remaining === undefined ? `${total} 张` : `听 ${total} 张`}</span>
+        </summary>
+        ${waitsMarkup(waits)}
+      </details>`).join('')}
+    </div>`;
+  }
+
+  function renderDiscardResults(options, fullJokers, note) {
     const discards = engine.getDiscards(hand, [], options);
     const best = discards[0];
     const topCount = discards.filter((entry) => entry.total === best.total).length;
     const complete = engine.isWinning(hand, options);
     const title = fullJokers ? '四幺鸡 · 满牌' : best.total ? '出牌建议' : '暂无听牌打法';
-    let description = '按弃牌后可胡的剩余张数排序。';
+    let description = '按弃牌后可胡的理论剩余张数排序。';
     if (complete) description = '当前手牌已经能胡。下方可查看各弃牌的结果。';
     if (fullJokers) description = '手中已有四张幺鸡，满足满牌规则。';
 
-    return `${resultHeading('打牌计算', title, description)}
+    return `${resultHeading('打牌计算', title, description, note)}
       ${best.total ? `<div class="best-card">
         <div class="best-tile">${tileMarkup(best.tile)}</div>
         <div class="best-info">
@@ -100,27 +122,43 @@
         <p class="best-count"><strong>${best.total}</strong><span> 张可胡</span></p>
       </div>
       ${waitsMarkup(best.waits)}` : ''}
-      <div class="ranking" aria-label="全部弃牌对比">
-        <h3 class="ranking-title">全部弃牌对比</h3>
-        ${discards.map(({ tile, waits, total }, index) => `<details class="rank-row">
-          <summary>
-            <span class="rank-index">${index + 1}</span>
-            <span class="rank-main">${tileMarkup(tile, { small: true })}<span>打 ${tileName(tile)}</span></span>
-            <span class="rank-detail">${waits.length} 种</span>
-            <span class="rank-total">${total} 张</span>
-          </summary>
-          ${waitsMarkup(waits)}
-        </details>`).join('')}
-      </div>`;
+      ${rankingMarkup(discards, '全部弃牌对比', '打')}`;
+  }
+
+  function renderWaitResults(eyebrow, options, note) {
+    const waits = engine.getWaits(hand, [], options);
+    const total = waits.reduce((sum, { remaining }) => sum + remaining, 0);
+    const title = waits.length ? '当前手牌已听牌' : '当前手牌未听牌';
+    const description = waits.length
+      ? `可胡 ${waits.length} 种牌，理论剩余 ${total} 张。`
+      : '再摸一张牌还不能胡。';
+    return `${resultHeading(eyebrow, title, description, note)}
+      ${waitsMarkup(waits)}
+      ${mode === 'discard' ? '<p class="result-subtitle">再选一张牌即可比较出牌方案。</p>' : ''}`;
+  }
+
+  function renderDrawResults(eyebrow, options, note, jokerCount) {
+    const draws = engine.getImprovingDraws(hand, [], options);
+    const fullDraw = draws.find(({ tile }) => tile === joker && jokerCount === 3);
+    const ordinaryDraws = fullDraw ? draws.filter((entry) => entry !== fullDraw) : draws;
+    const title = draws.length ? '下一张摸什么' : '暂时无法一摸听牌';
+    let description = '至少需要两张牌才能成普通胡牌。下方列出摸一张后可进入听牌的牌。';
+    if (draws.length === 0) description = '单补任意一张牌都无法进入听牌，可继续录入手牌。';
+    return `${resultHeading(eyebrow, title, description, note)}
+      ${fullDraw ? `<p class="result-subtitle">摸到第 4 张幺鸡直接满牌，理论剩余 ${fullDraw.remaining} 张。</p>` : ''}
+      ${ordinaryDraws.length ? rankingMarkup(ordinaryDraws, '摸牌后可胡的牌', '摸') : ''}`;
   }
 
   function renderResult(counts) {
     const options = { sevenPairs: sevenPairs.checked };
     const eyebrow = mode === 'win' ? '胡牌计算' : '打牌计算';
+    const size = hand.length;
     const fullJokers = counts[joker] === 4;
+    const stage = size % 3;
+    const note = shortHandNote(size);
 
-    if (mode === 'discard' && hand.length === maxHand) {
-      result.innerHTML = renderDiscardResults(options, fullJokers);
+    if (mode === 'discard' && stage === 2) {
+      result.innerHTML = renderDiscardResults(options, fullJokers, note);
       return;
     }
 
@@ -133,32 +171,25 @@
       return;
     }
 
-    if (hand.length === 13) {
-      const waits = engine.getWaits(hand, [], options);
-      const total = waits.reduce((sum, { remaining }) => sum + remaining, 0);
-      const title = waits.length ? '当前手牌已听牌' : '当前手牌未听牌';
-      const description = waits.length
-        ? `可胡 ${waits.length} 种牌，共剩 ${total} 张。`
-        : '添入任意一张剩余的牌，都无法组成胡牌。';
-      result.innerHTML = `${resultHeading(eyebrow, title, description)}
-        ${waitsMarkup(waits)}
-        ${mode === 'discard' ? '<p class="result-subtitle">再选一张牌即可比较出牌方案。</p>' : ''}`;
+    if (stage === 1) {
+      result.innerHTML = renderWaitResults(eyebrow, options, note);
       return;
     }
 
-    if (hand.length === maxHand) {
+    if (stage === 2) {
       const winning = engine.isWinning(hand, options);
       const title = winning ? '可以胡牌' : '这手牌暂时不能胡';
-      const description = winning ? '当前 14 张手牌符合胡牌规则。' : '切换至打牌计算，可查看各弃牌的听牌结果。';
-      result.innerHTML = resultHeading(eyebrow, title, description);
+      const description = winning ? `当前 ${size} 张手牌符合胡牌规则。` : '切换至打牌计算，可查看各弃牌的听牌结果。';
+      result.innerHTML = resultHeading(eyebrow, title, description, note);
       return;
     }
 
-    const description = mode === 'win'
-      ? '输入 13 张查看听牌，输入 14 张判断能否胡牌。'
-      : '输入 14 张手牌后，查看打哪张能胡的牌最多。';
-    result.innerHTML = `${resultHeading(eyebrow, '请先选择手牌', description)}
-      <div class="empty-state">已选择 ${hand.length} 张</div>`;
+    if (size > 0) {
+      result.innerHTML = renderDrawResults(eyebrow, options, note, counts[joker]);
+      return;
+    }
+
+    result.innerHTML = resultHeading(eyebrow, '请先选择手牌', '点选下方牌面即可开始计算。');
   }
 
   function render() {
@@ -176,7 +207,6 @@
       progress.setAttribute('aria-valuenow', hand.length);
     }
     let hint = '点击下方牌面添加，点击手牌移除。';
-    if (hand.length === 13) hint = '已选 13 张，可查看当前听牌。';
     if (hand.length === maxHand) hint = '已选满 14 张，点击手牌可移除。';
     if (isExample) hint = '当前为示例牌，点击清空可录入自己的牌。';
     handHint.textContent = hint;
@@ -263,6 +293,10 @@
     render();
   });
   sevenPairs.addEventListener('change', () => renderResult(countTiles()));
+
+  for (const gesture of ['gesturestart', 'gesturechange']) {
+    document.addEventListener(gesture, (event) => event.preventDefault(), { passive: false });
+  }
 
   document.querySelector('#rules-btn').addEventListener('click', () => rules.showModal());
   document.querySelector('#close-rules').addEventListener('click', () => rules.close());

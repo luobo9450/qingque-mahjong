@@ -4,6 +4,7 @@
   const TILE_COUNT = 27;
   const WILDCARD = 18;
   const COPIES = 4;
+  const MAX_HAND_SIZE = 14;
 
   function countTiles(tiles) {
     if (!Array.isArray(tiles)) return null;
@@ -62,13 +63,13 @@
     return false;
   }
 
-  function wins(counts, options, memo) {
+  function wins(counts, allowSevenPairs, memo) {
     const wildcards = counts[WILDCARD];
     if (wildcards === COPIES) return true;
 
     counts[WILDCARD] = 0;
     try {
-      if (options?.sevenPairs) {
+      if (allowSevenPairs) {
         const unpaired = counts.reduce((sum, count) => sum + count % 2, 0);
         if (unpaired <= wildcards) return true;
       }
@@ -90,9 +91,16 @@
     }
   }
 
+  function isCompleteHandSize(size) {
+    return size >= 2 && size <= MAX_HAND_SIZE && size % 3 === 2;
+  }
+
   function isWinning(hand, options) {
     const counts = countTiles(hand);
-    return Boolean(counts && hand.length === 14 && wins(counts, options, new Map()));
+    if (!counts || !isCompleteHandSize(hand.length)) return false;
+
+    const allowSevenPairs = hand.length === MAX_HAND_SIZE && options?.sevenPairs;
+    return wins(counts, allowSevenPairs, new Map());
   }
 
   function getAvailableCounts(counts, unavailable) {
@@ -103,13 +111,13 @@
     return available.some(count => count < 0) ? null : available;
   }
 
-  function findWaits(counts, available, options, memo) {
+  function findWaits(counts, available, allowSevenPairs, memo) {
     const waits = [];
     for (let tile = 0; tile < TILE_COUNT; tile++) {
       if (available[tile] === 0) continue;
 
       counts[tile]++;
-      const winning = wins(counts, options, memo);
+      const winning = wins(counts, allowSevenPairs, memo);
       counts[tile]--;
       if (winning) waits.push({ tile, remaining: available[tile] });
     }
@@ -118,38 +126,68 @@
 
   function getWaits(hand, unavailable = [], options) {
     const counts = countTiles(hand);
-    if (!counts || hand.length !== 13) return [];
+    if (!counts || !isCompleteHandSize(hand.length + 1)) return [];
 
     const available = getAvailableCounts(counts, unavailable);
-    return available ? findWaits(counts, available, options, new Map()) : [];
+    const allowSevenPairs = hand.length + 1 === MAX_HAND_SIZE && options?.sevenPairs;
+    return available ? findWaits(counts, available, allowSevenPairs, new Map()) : [];
+  }
+
+  function totalWaits(waits) {
+    return waits.reduce((sum, wait) => sum + wait.remaining, 0);
+  }
+
+  function compareWaitTotals(a, b) {
+    return b.total - a.total || b.waits.length - a.waits.length || a.tile - b.tile;
   }
 
   function getDiscards(hand, unavailable = [], options) {
     const counts = countTiles(hand);
-    if (!counts || hand.length !== 14) return [];
+    if (!counts || !isCompleteHandSize(hand.length)) return [];
 
     // Every tile in the original hand is still accounted for after a discard.
     const available = getAvailableCounts(counts, unavailable);
     if (!available) return [];
 
+    const allowSevenPairs = hand.length === MAX_HAND_SIZE && options?.sevenPairs;
     const discards = [];
     const memo = new Map();
     for (let tile = 0; tile < TILE_COUNT; tile++) {
       if (counts[tile] === 0) continue;
 
       counts[tile]--;
-      const waits = findWaits(counts, available, options, memo);
+      const waits = findWaits(counts, available, allowSevenPairs, memo);
       counts[tile]++;
-      discards.push({
-        tile,
-        waits,
-        total: waits.reduce((sum, wait) => sum + wait.remaining, 0)
-      });
+      discards.push({ tile, waits, total: totalWaits(waits) });
     }
-    return discards.sort((a, b) => b.total - a.total || b.waits.length - a.waits.length || a.tile - b.tile);
+    return discards.sort(compareWaitTotals);
   }
 
-  const Mahjong = { isWinning, getWaits, getDiscards };
+  function getImprovingDraws(hand, unavailable = [], options) {
+    const counts = countTiles(hand);
+    if (!counts || hand.length === 0 || !isCompleteHandSize(hand.length + 2)) return [];
+
+    const available = getAvailableCounts(counts, unavailable);
+    if (!available) return [];
+
+    const allowSevenPairs = hand.length + 2 === MAX_HAND_SIZE && options?.sevenPairs;
+    const draws = [];
+    const memo = new Map();
+    for (let tile = 0; tile < TILE_COUNT; tile++) {
+      const remaining = available[tile];
+      if (remaining === 0) continue;
+
+      counts[tile]++;
+      available[tile]--;
+      const waits = findWaits(counts, available, allowSevenPairs, memo);
+      available[tile]++;
+      counts[tile]--;
+      if (waits.length) draws.push({ tile, remaining, waits, total: totalWaits(waits) });
+    }
+    return draws.sort(compareWaitTotals);
+  }
+
+  const Mahjong = { isWinning, getWaits, getDiscards, getImprovingDraws };
   if (typeof module === "object" && module.exports) module.exports = Mahjong;
   else root.Mahjong = Mahjong;
 })(globalThis);
