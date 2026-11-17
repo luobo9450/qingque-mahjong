@@ -76,8 +76,18 @@
     return `按已吃、碰、杠 ${melds} 组计算，只录入手中未成组的牌。`;
   }
 
-  function waitsMarkup(waits) {
+  function coversAllTiles(waits, drawnTile) {
+    if (waits.length === 0) return false;
+    const winningTiles = new Set(waits.map(({ tile }) => tile));
+    return countTiles().every((count, tile) => {
+      const knownCopies = count + (tile === drawnTile ? 1 : 0);
+      return knownCopies === 4 || winningTiles.has(tile);
+    });
+  }
+
+  function waitsMarkup(waits, drawnTile) {
     if (waits.length === 0) return '<p class="empty-state">暂无可胡牌。</p>';
+    if (coversAllTiles(waits, drawnTile)) return '<p class="waits-all">全部</p>';
     return `<ul class="waits" aria-label="可胡的牌和剩余张数">
       ${waits.map(({ tile, remaining }) => `<li class="wait-item">
         ${tileMarkup(tile, { small: true })}
@@ -93,10 +103,10 @@
         <summary>
           <span class="rank-index">${index + 1}</span>
           <span class="rank-main">${tileMarkup(tile, { small: true })}<span>${action} ${tileName(tile)}</span></span>
-          <span class="rank-detail">${remaining === undefined ? `${waits.length} 种` : `余 ${remaining} 张`}</span>
+          <span class="rank-detail">${remaining === undefined ? (coversAllTiles(waits) ? '全部' : `${waits.length} 种`) : `余 ${remaining} 张`}</span>
           <span class="rank-total">${remaining === undefined ? `${total} 张` : `听 ${total} 张`}</span>
         </summary>
-        ${waitsMarkup(waits)}
+        ${waitsMarkup(waits, remaining === undefined ? undefined : tile)}
       </details>`).join('')}
     </div>`;
   }
@@ -117,7 +127,7 @@
         <div class="best-info">
           <p class="best-label">${topCount > 1 ? '并列最多' : '优先打出'}</p>
           <h3>打 ${tileName(best.tile)}</h3>
-          <p>可胡 ${best.waits.length} 种</p>
+          <p>${coversAllTiles(best.waits) ? '可胡全部牌' : `可胡 ${best.waits.length} 种`}</p>
         </div>
         <p class="best-count"><strong>${best.total}</strong><span> 张可胡</span></p>
       </div>
@@ -130,7 +140,7 @@
     const total = waits.reduce((sum, { remaining }) => sum + remaining, 0);
     const title = waits.length ? '当前手牌已听牌' : '当前手牌未听牌';
     const description = waits.length
-      ? `可胡 ${waits.length} 种牌，理论剩余 ${total} 张。`
+      ? `${coversAllTiles(waits) ? '可胡全部牌' : `可胡 ${waits.length} 种牌`}，理论剩余 ${total} 张。`
       : '再摸一张牌还不能胡。';
     return `${resultHeading(eyebrow, title, description, note)}
       ${waitsMarkup(waits)}
@@ -303,10 +313,5 @@
   rules.addEventListener('click', (event) => {
     if (event.target === rules) rules.close();
   });
-  document.querySelector('#view-hand-btn').addEventListener('click', () => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelector('#hand-section').scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
-  });
-
   render();
 })();

@@ -7,15 +7,14 @@
   <meta name="description" content="青雀麻将计算器，支持幺鸡万能牌与四鸡满牌，快速计算胡牌和最优弃牌。">
   <title>青雀麻将 · 胡牌与打牌计算器</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%23e1c48b'/%3E%3Cpath d='M15 31c6-13 11-16 20-17-3 10-8 14-20 17Zm0 0 12-10' fill='none' stroke='%23132d26' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
   <script defer src="mahjong.js?v=3"></script>
-  <script defer src="app.js?v=3"></script>
+  <script defer src="app.js?v=4"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <symbol id="icon-sparrow" viewBox="0 0 24 24"><path d="M4 18c4-1 7-4 8-8 1-4 4-5 7-3l2 1-3 2c1 5-4 9-10 9H4Zm3 0-2 3m7-2 1 2m1-8c2 0 3-1 4-2M4 18l-2-3 6 1"/></symbol>
     <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 6c-3-2-6-2-9-1v13c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1Zm0 0v13"/></symbol>
-    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M12 5v14m-5-5 5 5 5-5"/></symbol>
     <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M8 6 4 10l4 4m-4-4h10a5 5 0 1 1 0 10h-2"/></symbol>
     <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></symbol>
     <symbol id="icon-sample" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 9h.01m6 6h.01M12 12h.01" stroke-width="2.6"/></symbol>
@@ -33,32 +32,6 @@
   </header>
 
   <main class="shell">
-    <section class="hero" aria-labelledby="page-title">
-      <div class="hero-copy">
-        <div class="hero-kicker"><span></span>幺鸡万能牌</div>
-        <h1 id="page-title">麻将<span>计算器</span></h1>
-        <p>选入手牌，查能胡哪几张、打哪张更容易胡。</p>
-        <button id="view-hand-btn" class="button button-gold" type="button">开始算牌<svg class="icon"><use href="#icon-arrow"/></svg></button>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="art-ring ring-outer"></div><div class="art-ring ring-inner"></div>
-        <span class="art-star star-one">✦</span><span class="art-star star-two">✧</span><span class="art-star star-three">✦</span>
-        <div class="art-tile art-wan"><div class="art-face"><span>九</span><b>萬</b></div></div>
-        <div class="art-tile art-tong"><div class="art-face"><i></i><i></i><i></i><i></i></div></div>
-        <div class="art-tile art-joker"><div class="art-face">
-          <svg viewBox="0 0 88 93" fill="none">
-            <path d="M12 72c11 1 23 0 31-7 8-6 16-15 17-26 1-6-1-11-5-14l7-6 8 4-5 7c7 9 6 22-1 32-11 15-29 19-52 10Z" fill="#295b43"/>
-            <path d="M26 68c8-17 17-24 29-25-2 13-12 22-29 25Z" fill="#e0b46f"/>
-            <path d="M25 70c7-7 14-13 24-18" stroke="#926735" stroke-width="2" stroke-linecap="round"/>
-            <path d="m66 26 8-5 4 5-11 3" fill="#a4503b"/><circle cx="63" cy="24" r="1.6" fill="#fff8e5"/>
-            <path d="M19 78h53m-37 0c4-4 8-5 12 0m2-1c7-6 13-6 17 0M52 16l3-5m-9 5-3-4" stroke="#a47b40" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M14 68c3-10 7-16 12-18-1 7-4 13-12 18Z" fill="#779262"/>
-          </svg>
-          <b>幺鸡</b>
-        </div></div>
-      </div>
-    </section>
-
     <div class="workspace">
       <div class="input-column">
         <section class="panel hand-panel" id="hand-section" aria-labelledby="hand-title">
